@@ -26,6 +26,7 @@ events.onAll(({ eventName, data }) => {
 const page = new Page(document.body, events);
 const modal = new Modal(ensureElement<HTMLElement>('#modal-container'), events);
 
+
 //Шаблоны
 const catalogItemTpl = ensureElement<HTMLTemplateElement>('#card-catalog')
 const cardPreviewTpl = ensureElement<HTMLTemplateElement>('#card-preview');
@@ -39,6 +40,7 @@ const successTpl = ensureElement<HTMLTemplateElement>('#success')
 const order = new Order(cloneTemplate(orderTpl), events)
 const contacts = new UserContacts(cloneTemplate(contactsTpl), events);
 const success = new Success(cloneTemplate(successTpl), events);
+const basket = new Basket(cloneTemplate(basketTpl), events)
 
 //Отрисовка начального состояния страницы
 events.on('items:changed', () => {
@@ -72,33 +74,18 @@ events.on('preview:changed', () => {
 //Добавление карточки в корзину
 events.on('basket:add', (selectedProduct: IProduct) => {
   appData.addToBasket(selectedProduct.id)
-  page.counter = appData.getBasketAmount();
   modal.close()
 })
 
-//Открытие корзины
+
 events.on('basket:open', () => {
-  const productsList = appData.getBasketProducts()
-  const productCards = productsList.map((product: IProduct, index: number) => {
-    const actions = {
-      deleteFromBasket: () => { events.emit('basket:delete', product) }
-    }
-    const card = new ProductBasketItem(cloneTemplate(cardBasketTpl), actions)
-    card.index = index + 1
-    return card.render(product)
-  })
-  const basket = new Basket(cloneTemplate(basketTpl), events)
-  basket.list = productCards
-  basket.total = appData.calculateTotal()
-  basket.setSubmitDisabled(!appData.isBasketTotalValid());
-  modal.content = basket.render()
-  modal.open()
-})
+  events.emit('basket:update', appData.getBasketProducts());
+  modal.open();
+});
 
 //Удаление карточки из корзины
 events.on('basket:delete', (item: IProduct) => {
   appData.deleteFromBasket(item.id);
-  page.counter = appData.getBasketAmount();
 })
 
 // Обновление состояния корзины
@@ -111,10 +98,10 @@ events.on('basket:update', (products: IProduct[]) => {
     card.index = index + 1;
     return card.render(product);
   });
-  const basket = new Basket(cloneTemplate(basketTpl), events);
   basket.list = productCards;
   basket.total = appData.calculateTotal()
   basket.setSubmitDisabled(!appData.isBasketTotalValid());
+  page.counter = appData.getBasketAmount();
   modal.content = basket.render();
 });
 
@@ -185,4 +172,7 @@ events.on('modal:close', () => {
 api.getProducts()
   .then((products: IProduct[]) => {
     appData.setCatalog(products)
+  })
+  .catch((err) => {
+    console.log(err)
   })

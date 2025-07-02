@@ -69,6 +69,7 @@ export class AppState extends Model<IAppState> {
     if (!this.basket.includes(id)) {
       this.basket.push(id);
     }
+    this.events.emit('basket:update', this.getBasketProducts());
   }
 
   //Удаление товара из корзины
